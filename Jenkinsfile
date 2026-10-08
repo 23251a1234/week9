@@ -3,31 +3,42 @@ pipeline {
 
     stages {
 
-        stage('Build') {
+        stage('Checkout') {
             steps {
-                echo "Build Docker Image"
-                bat "docker build -t mypythonflaskapp ."
+                checkout scm
             }
         }
 
-        stage('Run') {
+        stage('Build Docker Image') {
             steps {
-                echo "Run application in Docker Container"
-
-                bat "docker rm -f mycontainer || exit 0"
-
-                bat "docker run -d -p 5000:5000 --name mycontainer mypythonflaskapp"
+                bat 'docker build -t greeshma2005/mypythonflaskapp:latest .'
             }
         }
-    }
 
-    post {
-        success {
-            echo 'Pipeline completed successfully!'
+        stage('Login to Docker Hub') {
+            steps {
+                bat 'docker login -u greeshma2005'
+            }
         }
 
-        failure {
-            echo 'Pipeline failed. Please check the logs.'
+        stage('Push Docker Image') {
+            steps {
+                bat 'docker push greeshma2005/mypythonflaskapp:latest'
+            }
+        }
+
+        stage('Deploy to Kubernetes') {
+            steps {
+                bat 'kubectl apply -f deployment.yaml'
+                bat 'kubectl apply -f service.yaml'
+            }
+        }
+
+        stage('Verify Deployment') {
+            steps {
+                bat 'kubectl get pods'
+                bat 'kubectl get svc'
+            }
         }
     }
 }
